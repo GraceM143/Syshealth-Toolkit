@@ -17,7 +17,7 @@ print_status() {
 		echo -e "\e[32m OK: $message\e[0m"
 	else
 		echo -e "\e[31m ALERT: $message\e[0m"
-	fi
+	kk
 }
 
 
