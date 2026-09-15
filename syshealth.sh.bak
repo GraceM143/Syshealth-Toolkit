@@ -5,22 +5,6 @@
 # Author: Grace McGinn
 # Date: $(09/08/2026 +%Y-%m-%d)
 # ==============================================
-# --- Thresholds (change these values to test alert behavior --- 
-CPU_THRESHOLD=75
-MEM_THRESHOLD=85
-DISK_THRESHOLD=85
-
-print_status() {
-	local status="$1"
-	local message="$2"
-	if [ "$status" = "OK" ]; then
-		echo -e "\e[32m OK: $message\e[0m"
-	else
-		echo -e "\e[31m ALERT: $message\e[0m"
-	fi
-}
-
-
 HOSTNAME=$(hostname)
 CURRENT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 
@@ -39,17 +23,6 @@ UPTIME=$(uptime -p)
 DISK_USAGE=$(df -h / | tail -1)
 MEMORY_USAGE=$(free -h | awk '/Mem:/ {print $3 "/" $2}')
 PROCESS_COUNT=$(ps -e | wc -l)
-
-# --- Parse numeric percentages for threshold comparison (Rocky Linux 9 compatible
-# Disk usage percetage for root filesystem (strip the % sign)
-DISK_PCT=$(df / | tail -1 | awk '{gsub("%",""); print $5}')
-
-# Memory usage percentage (used / total * 100), rounded to integer
-MEM_PCT=$(free | awk '/Mem:/ {printf "&.0f", $3/$2*100}')
-
-#CPU usage percentage (100-idle). The top -bn1 method is a common one-liner
-#that works on Rocky Linux 9. Note: this is a brief snapshot; production tools
-#often average over time or use /proc/stat directly
 
 # --- Output handling ---
 OUTPUT_FILE="${1:-}" #if $1 is given, use it; else print to screen
