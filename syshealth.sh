@@ -11,15 +11,15 @@ MEM_THRESHOLD=85
 DISK_THRESHOLD=85
 
 # --- Function definiitions will go here (print_status, check_*, run_*, parse_*, generate_*) ---
-#print_status() {
- #       local status="$1"
-  #      local message="$2"
-       # if [ "$status" = "OK" ]; then
-       #         echo -e "\e[32m OK: $message\e[0m"
-       # else
-        #        echo -e "\e[31m ALERT: $message\e[0m"
-       # fi
-#}
+print_status() {
+	local status="$1"
+       	local message="$2"
+       	if [ "$status" = "OK" ]; then
+                echo -e "\e[32m OK: $message\e[0m"
+       	else
+               echo -e "\e[31m ALERT: $message\e[0m"
+       	fi
+}
 
 main() {
 	parse_arguments "$@"
