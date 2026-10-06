@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ===============================================
 # syshealth.sh - System Health & Log Analysis Toolkit
-# Lab 1 - Data Collector
+# Lab 3 - Refactoring into Functions
 # Author: Grace McGinn
 # Date: $(09/08/2026 +%Y-%m-%d)
 # ==============================================
@@ -10,16 +10,25 @@ CPU_THRESHOLD=75
 MEM_THRESHOLD=85
 DISK_THRESHOLD=85
 
-print_status() {
-	local status="$1"
-	local message="$2"
-	if [ "$status" = "OK" ]; then
-		echo -e "\e[32m OK: $message\e[0m"
-	else
-		echo -e "\e[31m ALERT: $message\e[0m"
-	fi
+# --- Function definiitions will go here (print_status, check_*, run_*, parse_*, generate_*) ---
+#print_status() {
+ #       local status="$1"
+  #      local message="$2"
+       # if [ "$status" = "OK" ]; then
+       #         echo -e "\e[32m OK: $message\e[0m"
+       # else
+        #        echo -e "\e[31m ALERT: $message\e[0m"
+       # fi
+#}
+
+main() {
+	parse_arguments "$@"
+	run_health_checks
+	generate_report
 }
 
+# The single call that starts everything - must be the very last line
+main
 
 HOSTNAME=$(hostname)
 CURRENT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
@@ -43,7 +52,7 @@ PROCESS_COUNT=$(ps -e | wc -l)
 # --- Parse numeric percentages for threshold comparison (Rocky Linux 9 compatible
 # Disk usage percetage for root filesystem (strip the % sign)
 DISK_PCT=$(df / | tail -1 | awk '{gsub("%",""); print $5}')
-
+#
 # Memory usage percentage (used / total * 100), rounded to integer
 MEM_PCT=$(free | awk '/Mem:/ {printf "%.0f", $3/$2*100}')
 
