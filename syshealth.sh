@@ -26,7 +26,7 @@ check_disk_usage() {
 	local pct threshold
 	threshold="$DISK_THRESHOLD"
 
-	if ! mountpoint -q "$mount" 2>/dev/null && [ "$mount" != "/"]; then
+	if ! mountpoint -q "$mount" 2>/dev/null && [ "$mount" != "/" ]; then
 		print_status "OK" "Mount point $mount does not exist on this system"
 		return 0
 	fi
@@ -45,7 +45,7 @@ check_disk_usage() {
 check_memory_usage() {
 	local pct threshold
 	threshold="$MEM_THRESHOLD"
-	pct=$(free | awk '/Mem:/ {printf "%.0f", "$3/$2*100}')
+	pct=$(free | awk '/Mem:/ {printf "%.0f", "$3/$2*100"}')
 
 	if (( pct > threshold )); then
 		print_status "ALERT" "Memory usage is ${pct}% (threshold ${threshold}%)"
@@ -70,112 +70,75 @@ check_cpu_usage() {
 	fi
 }
 
+run_health_checks() {
+	local overall_status=0
+
+	print_status "CHECK" "Running system health analysis..."
+
+	# DIsk checks via loop (replaces the inline for-loop from Lab 2)
+	for mount in / /home /var; do
+		if ! check_disk_usage "$mount"; then
+			overall_status = 1
+		fi
+	done
+
+	#Memory check
+	if ! check_memory_usage; then
+		overall_status=1
+	fi
+	
+	# CPU check
+	if ! check_cpu_usage; then
+		overall_status=1
+	fi
+
+	# Store result for generate_report / exit
+	HEALTH_STATUS="$overall_status"
+	return "$overall_status"
+}
+
+parse_arguments() {
+	OUPUT_FILE="${1:-}" #if $1 is given, use it as output file; otherwise empty
+}
+
 main() {
 	parse_arguments "$@"
+	#Run all health checks (prints colored alerts to terminal)
 	run_health_checks
-	generate_report
-}
-
-# The single call that starts everything - must be the very last line
-main
-
-HOSTNAME=$(hostname)
-CURRENT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
-
-echo "Hostname without quotes: $HOSTNAME" #works here but dangerous later
-echo "Hostname with quotes: \"$HOSTNAME\"" #bash best practice
-
-cat << EOF
-# COMMENT FOR GRADER:
-# In Python/Java variables expand safely.
-# In Bash, unquote \$VAR splits on spaces/tabs/newlines.
-# Always double-quote unless you deliberately want splitting.
-EOF
-
-# --- System metrics collection ---
-UPTIME=$(uptime -p)
-DISK_USAGE=$(df -h / | tail -1)
-MEMORY_USAGE=$(free -h | awk '/Mem:/ {print $3 "/" $2}')
-PROCESS_COUNT=$(ps -e | wc -l)
-
-# --- Parse numeric percentages for threshold comparison (Rocky Linux 9 compatible
-# Disk usage percetage for root filesystem (strip the % sign)
-DISK_PCT=$(df / | tail -1 | awk '{gsub("%",""); print $5}')
-#
-# Memory usage percentage (used / total * 100), rounded to integer
-MEM_PCT=$(free | awk '/Mem:/ {printf "%.0f", $3/$2*100}')
-
-#CPU usage percentage (100-idle). The top -bn1 method is a common one-liner
-#that works on Rocky Linux 9. Note: this is a brief snapshot; production tools
-#often average over time or use /proc/stat directly
-CPU_PCT=$(top -bn1 | grep '^%Cpu' | awk '{print 100 -$8}' | cut -d. -f1)
-
-# --- Health check with conditionals and color-coded output ---
-print_status "CHECK" "Running system health analysis..."
-
-HEALTH_STATUS=0 # 0 = healthy (no alerts). Will be set to 1 if any check fails
-
-#Disk check for root filesystem
-if ((DISK_PCT > DISK_THRESHOLD )); then
-	print_status "ALERT" "Disk usage on / is ${DISK_PCT}% (threshold ${DISK_THRESHOLD}%)"
-	HEALTH_STATUS=1
-else
-	print_status "OK" "Disk usage on / is ${DISK_PCT}%"
-fi
-
-# --- Loop over multiple mount points (more realistic monitoring) ---
-for mount in / /home /var; do
-	if mountpoint -q "$mount" 2>/dev/null || [ "$mount" = "/" ]; then
-		PCT=$(df "$mount" | tail -1 | awk '{gsub("%",""); print $5}')
-		if (( PCT > DISK_THRESHOLD )); then
-			print_status "ALERT" "Disk usage on $mount is ${PCT}% (threshold ${DISK_THRESHOLD}%)"
-			HEALTH_STATUS=1
-		else
-			print_status "OK" "Disk usage on $mount is ${PCT}%"
-		fi
+	
+	#Generate the structure report (to screen or file)
+	if [ -n "$OUTPUT_FILE" ]; then
+		generate_report > "$OUTPUT_FILE"
+		echo "Report written to $OUTPUT_FILE"
 	else
-		print_status "OK" "Mount point $mount does not exist or is not a mountpoint on this system"
+		generate_report
 	fi
-done
 
-# Memory check
-if (( MEM_PCT > MEM_THRESHOLD )); then
-	print_status "ALERT" "Memory usage is ${MEM_PCT}% (threshold ${MEM_THRESHOLD}%)"
-	HEALTH_STATUS=1
-else
-	print_status "OK" "CPU usage is ${MEM_PCT}%"
-fi
+	#Exit with the aggregated health status from run_health_status
+	exit "${HEALTH_STATUS:-0}"
+} 
 
-# CPU check
-if ((CPU_PCT > CPU_THRESHOLD )); then
-	print_status "ALERT" "CPU usage is ${CPU_PCT}% (threshold ${CPU_THRESHOLD}%)"
-	HEALTH_STATUS = 1
-else
-	print_status "OK" "CPU usage is ${CPU_PCT}%"
-fi
+generate_report(){
+	#Re-collect the human-readable metrics (same as lab 1)
+	local CURRENT_DATE HOSTNAME UPTIME DISK_USAGE MEMORY_USAGE PROCESS_COUNT
+	
+	HOSTNAME=$(hostname)
+	CURRENT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+	UPTIME=$(uptime -p)
+	DISK_USAGE=$(df -h / | tail -1)
+	MEMORY_USAGE=$(free -h | awk '/Mem:/ {print $3 "/" $2}')
+	PROCESS_COUNT=$(ps -e | wc -l)
 
-
-# --- Output handling ---
-OUTPUT_FILE="${1:-}" #if $1 is given, use it; else print to screen
-
-print_report(){
-printf "==========================================\n"
-printf "System Health Report -%s\n" "$CURRENT_DATE"
-printf "Hostname	: %s\n" "$HOSTNAME"
-printf "Uptime		: %s\n" "$UPTIME"
-printf "Disk /		: %s\n" "$DISK_USAGE"
-printf "Memory used	: %s\n" "$MEMORY_USAGE"
-printf "Total processes	: %s\n" "$PROCESS_COUNT"
-printf "Health status	: %s\n" "$([ "$HEALTH_STATUS" -eq 0 ] && echo "HEALTHY" || echo "UNHEALTHY - see alerts above")"
-printf "=========================================\n"
+	printf "==========================================\n"
+	printf "System Health Report -%s\n" "$CURRENT_DATE"
+	printf "Hostname	: %s\n" "$HOSTNAME"
+	printf "Uptime		: %s\n" "$UPTIME"
+	printf "Disk /		: %s\n" "$DISK_USAGE"
+	printf "Memory used	: %s\n" "$MEMORY_USAGE"
+	printf "Total processes	: %s\n" "$PROCESS_COUNT"
+	printf "Health status	: %s\n" "$([ "$HEALTH_STATUS" -eq 0 ] && echo "HEALTHY" || echo "UNHEALTHY - see alerts above")"
+	printf "=========================================\n"
 }
 
-if [ -n "$OUTPUT_FILE" ]; then
-	print_report > "$OUTPUT_FILE"
-	echo "Report written to $OUTPUT_FILE"
-else
-	print_report
-fi
-
-# exit with 0 (healthy) or 1 (alerts triggered). This enables scripting/cron usage
-exit "${HEALTH_STATUS:-0}"
+# --- the single call that starts everything - must be the last line
+main
