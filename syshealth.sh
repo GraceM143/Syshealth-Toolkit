@@ -115,12 +115,11 @@ analyze_logs() {
 	#count issues using extended regex (case-insensitive where useful)
 	errors=$(grep -E -i 'ERROR|Error|error' "$log_file" 2>/dev/null | wc -l)
 	warnings=$(grep -E -i 'WARNING|Warning|warning' "$log_file" 2>/dev/null | wc -l)
-	failed_login=$(grep -E -i 'Failed password|authentication failure|Failed login' "$log_file" 2>/dev/null | wc -l)
+	failed_logins=$(grep -E -i 'Failed password|authentication failure|Failed login' "$log_file" 2>/dev/null | wc -l)
 
 	#Top 5 most common errors/warning messages (cleaned with sed)
         printf "\nTop 5 recurring issues:\n"
-        grep -E -i 'ERROR|Error|error|WARNING|Warning|warning|Failed password|authentication failure'
-"$log_file" 2>/dev/null \
+        grep -E -i 'ERROR|Error|error|WARNING|Warning|warning|Failed password|authentication failure' "$log_file" 2>/dev/null \
                 | sed 's/.*\]: //' \
                 | sort \
 		| uniq -c \
