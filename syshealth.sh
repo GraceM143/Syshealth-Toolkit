@@ -115,7 +115,24 @@ analyze_logs() {
 	errors=$(grep -E -i 'ERROR|Error|error' "$log_file" 2>/dev/null | wc -1)
 	warnings=$(grep -E -i 'WARNING|Warning|warning' "$log_file" 2>/dev/null | wc -1)	
 	failed_login=$(grep -E -i 'Failed password|authentication failure|Failed login' "$log_file" 2>/dev/null | wc -1)
-	
+
+	#Top 5 most common errors/warning messages (cleaned with sed)
+        printf "\nTop 5 recurring issues:\n"
+        grep -E -i 'Error|error|ERROR|Warning|warning|WARNING|Failed password|authentication failure'
+"$log_file" 2>/dev/null \
+                | sed 's.*\]: //' \
+                | sort \
+                | uniq -c \
+                | sort -nr \
+                | head -5 \
+
+        #summary section
+        printf "\nLog Analysis Summary (%s):\n" "$(basename "$log_file")"
+        printf "  Errors        : %d\n" "$errors"
+        printf "  Warnings      : %d\n" "$warnings"
+        printf "  Failed logins : %d\n" "$failed_logins"
+
+
 parse_arguments() {
 	OUPUT_FILE="${1:-}" #if $1 is given, use it as output file; otherwise empty
 }
