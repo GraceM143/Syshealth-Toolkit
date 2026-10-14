@@ -26,7 +26,7 @@ check_disk_usage() {
 	local pct threshold
 	threshold="$DISK_THRESHOLD"
 
-	if ! mountpoint -q "$mount" 2>/dev/null && [ "$mount" != "/" ]; then
+	if [ ! mountpoint -q "$mount" 2>/dev/null ] && [ "$mount" != "/" ]; then
 		print_status "OK" "Mount point $mount does not exist on this system"
 		return 0
 	fi
@@ -45,7 +45,7 @@ check_disk_usage() {
 check_memory_usage() {
 	local pct threshold
 	threshold="$MEM_THRESHOLD"
-	pct=$(free | awk '/Mem:/ {printf "%.0f", "$3/$2*100"}')
+	pct=$(free | awk '/Mem:/ {printf "%.0f", $3/$2*100}')
 
 	if (( pct > threshold )); then
 		print_status "ALERT" "Memory usage is ${pct}% (threshold ${threshold}%)"
@@ -58,10 +58,10 @@ check_memory_usage() {
 
 check_cpu_usage() {
 	local pct threshold
-	threshold="CPU_THRESHOLD"
-	pct=$(top -bn1 | grep '^&Cpu' | awk '{print 100 - $8}' | cut -d. -f1)
+	threshold="$CPU_THRESHOLD"
+	pct=$(top -bn1 | grep '^%Cpu' | awk '{print 100 - $8}' | cut -d. -f1)
 
-	if ((pct > threshold)); then
+	if (( pct > threshold )); then
 		print_status "ALERT" "CPU usage is ${pct}% (threshold ${threshold}%)"
 		return 1
 	else
@@ -78,7 +78,7 @@ run_health_checks() {
 	# DIsk checks via loop (replaces the inline for-loop from Lab 2)
 	for mount in / /home /var; do
 		if ! check_disk_usage "$mount"; then
-			overall_status = 1
+			overall_status=1
 		fi
 	done
 
@@ -98,7 +98,7 @@ run_health_checks() {
 }
 
 analyze_logs() {
-	local log_file="{$1-/var/log/messages}" #default to rocky linux 9 main log
+	local log_file="${1:-/var/log/messages}" #default to rocky linux 9 main log
 	local errors=0
 	local warnings=0
 	local failed_logins=0
@@ -109,20 +109,21 @@ analyze_logs() {
                 printf "\nLog Analysis Summary (%s):\n" "$(basename "$log_file")"
                 printf " Log file is not readable or does not exist on this system.\n"
                 printf " (This is normal in some containers or minimal installs.)\n"
-        fi
+		return 0
+	fi
 
 	#count issues using extended regex (case-insensitive where useful)
-	errors=$(grep -E -i 'ERROR|Error|error' "$log_file" 2>/dev/null | wc -1)
-	warnings=$(grep -E -i 'WARNING|Warning|warning' "$log_file" 2>/dev/null | wc -1)	
-	failed_login=$(grep -E -i 'Failed password|authentication failure|Failed login' "$log_file" 2>/dev/null | wc -1)
+	errors=$(grep -E -i 'ERROR|Error|error' "$log_file" 2>/dev/null | wc -l)
+	warnings=$(grep -E -i 'WARNING|Warning|warning' "$log_file" 2>/dev/null | wc -l)
+	failed_login=$(grep -E -i 'Failed password|authentication failure|Failed login' "$log_file" 2>/dev/null | wc -l)
 
 	#Top 5 most common errors/warning messages (cleaned with sed)
         printf "\nTop 5 recurring issues:\n"
-        grep -E -i 'Error|error|ERROR|Warning|warning|WARNING|Failed password|authentication failure'
+        grep -E -i 'ERROR|Error|error|WARNING|Warning|warning|Failed password|authentication failure'
 "$log_file" 2>/dev/null \
-                | sed 's.*\]: //' \
+                | sed 's/.*\]: //' \
                 | sort \
-                | uniq -c \
+		| uniq -c \
                 | sort -nr \
                 | head -5 \
 
@@ -131,28 +132,11 @@ analyze_logs() {
         printf "  Errors        : %d\n" "$errors"
         printf "  Warnings      : %d\n" "$warnings"
         printf "  Failed logins : %d\n" "$failed_logins"
-
-
-parse_arguments() {
-	OUPUT_FILE="${1:-}" #if $1 is given, use it as output file; otherwise empty
 }
 
-main() {
-	parse_arguments "$@"
-	#Run all health checks (prints colored alerts to terminal)
-	run_health_checks
-	
-	#Generate the structure report (to screen or file)
-	if [ -n "$OUTPUT_FILE" ]; then
-		generate_report > "$OUTPUT_FILE"
-		echo "Report written to $OUTPUT_FILE"
-	else
-		generate_report
-	fi
-
-	#Exit with the aggregated health status from run_health_status
-	exit "${HEALTH_STATUS:-0}"
-} 
+parse_arguments() {
+	OUTPUT_FILE="${1:-}" #if $1 is given, use it as output file; otherwise empty
+}
 
 generate_report(){
 	#Re-collect the human-readable metrics (same as lab 1)
@@ -176,10 +160,27 @@ generate_report(){
 	printf "=========================================\n"
 	
 	#--- NEW: log analysis summary (integrated into every report ---
-	printf "\n========================================\n"
+	printf "\n=========+===============================\n"
 	printf "LOG ANALYSIS SUMMARY\n"
 	printf "=========================================\n"
 	analyze_logs # uses default /var/log/messages
+}
+
+main() {
+        parse_arguments "$@"
+        #Run all health checks (prints colored alerts to terminal)
+        run_health_checks
+
+        #Generate the structure report (to screen or file)
+        if [ -n "$OUTPUT_FILE" ]; then
+                generate_report > "$OUTPUT_FILE"
+                echo "Report written to $OUTPUT_FILE"
+       	else
+                generate_report
+        fi
+
+        #Exit with the aggregated health status from run_health_status
+        exit "${HEALTH_STATUS:-0}"
 }
 
 # --- the single call that starts everything - must be the last line
