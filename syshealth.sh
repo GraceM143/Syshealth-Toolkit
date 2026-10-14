@@ -104,6 +104,13 @@ analyze_logs() {
 	local failed_logins=0
 	local top_issues
 
+	#graceful handling if log file is missing or unreadable
+        if [ ! -r "$log_file" ]; then
+                printf "\nLog Analysis Summary (%s):\n" "$(basename "$log_file")"
+                printf " Log file is not readable or does not exist on this system.\n"
+                printf " (This is normal in some containers or minimal installs.)\n"
+        fi
+
 	#count issues using extended regex (case-insensitive where useful)
 	errors=$(grep -E -i 'ERROR|Error|error' "$log_file" 2>/dev/null | wc -1)
 	warnings=$(grep -E -i 'WARNING|Warning|warning' "$log_file" 2>/dev/null | wc -1)	
