@@ -163,7 +163,7 @@ generate_report(){
 		"Disk /: $DISK_USAGE"
 		"Memory used: $MEMORY_USAGE"
 		"Total processes: $PROCESS_COUNT"
-		"Health status: $([ "{HEALTH_STATUS:-0}" -eq 0 ] && echo "HEALTHY" || echo "UNHEALTHY")"
+		"Health status: $([ "${HEALTH_STATUS:-0}" -eq 0 ] && echo "HEALTHY" || echo "UNHEALTHY")"
 	)
 
 	printf "=========================================\n"

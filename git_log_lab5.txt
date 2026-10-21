@@ -1,0 +1,20 @@
+* 6532869 (HEAD -> main, origin/main, origin/HEAD) rewrite generate_report with here-document footer and add logging calls
+* 061af09 add array (local -a) for report_metrics and populate in general_report
+* 0f21b9f implement log_message function with timestamped append to ~/.syshealth.log
+* 87831ed add strict mode set -euo pipefall and trap handlers for ERR/EXIT
+* 4f13595 resolved issues, submitting
+* 63defa7 debugging
+* c84ca19 add graceful missing-log handling and update documentation
+* f8b6ab8 Integrate log analysis summary into generate_report()
+* 70f9123 implement sed + sort|uniq|head pipeline for top 5 recurring issues
+* e180915 Add analyze_logs function with grep -E regex and counts
+* 15ec1ba Implement run_health_checks, parse_arguments, generate_report and update main()
+* 8f874a9 Create check_disk_usage, check_memory_usage, and check_cpu_usage functions with return codes
+* 15f96fb Extract print_status with local variables
+* 70ebd85 Add main() function and basic script structure
+* 9553e8b Add for-loop over multiple mount points and update exit code handling
+* 2cea33a add parsing and conditionnal checks for disk,memory, and cpu
+* fa9eb22 Implement print+status functions with color-coded output
+* b1293b5 Added threshold variables for CPU,MEM,DISK
+* 186ac33 (origin/rocky9) adding to remote
+* 53580ad adding to remote
