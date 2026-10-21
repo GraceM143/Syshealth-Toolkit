@@ -5,7 +5,7 @@
 # Author: Grace McGinn
 # Date: $(10/20/2026 +%Y-%m-%d)
 # ==============================================
-set -euo pipefall
+set -euo pipefail
 
 # Trap for logging on error or unespected event
 trap 'log_message "ERROR" "Script exited unexpectedly with code $?"' ERR
@@ -155,14 +155,23 @@ generate_report(){
 	MEMORY_USAGE=$(free -h | awk '/Mem:/ {print $3 "/" $2}')
 	PROCESS_COUNT=$(ps -e | wc -l)
 
-	printf "==========================================\n"
-	printf "System Health Report -%s\n" "$CURRENT_DATE"
-	printf "Hostname	: %s\n" "$HOSTNAME"
-	printf "Uptime		: %s\n" "$UPTIME"
-	printf "Disk /		: %s\n" "$DISK_USAGE"
-	printf "Memory used	: %s\n" "$MEMORY_USAGE"
-	printf "Total processes	: %s\n" "$PROCESS_COUNT"
-	printf "Health status	: %s\n" "$([ "$HEALTH_STATUS" -eq 0 ] && echo "HEALTHY" || echo "UNHEALTHY - see alerts above")"
+	# demonstrate array usage
+	local -a report_metrics
+	report_metrics=(
+		"Hostname: $HOSTNAME"
+		"Uptime: $UPTIME"
+		"Disk /: $DISK_USAGE"
+		"Memory used: $MEMORY_USAGE"
+		"Total processes: $PROCESS_COUNT"
+		"Health status: $([ "{HEALTH_STATUS:-0}" -eq 0 ] && echo "HEALTHY" || echo "UNHEALTHY")"
+	)
+
+	printf "=========================================\n"
+	
+	for metric in "${report_metrics[@]}"; do
+		printf "%s\n" "$metric"
+	done
+
 	printf "=========================================\n"
 	
 	#--- NEW: log analysis summary (integrated into every report ---
@@ -170,6 +179,19 @@ generate_report(){
 	printf "LOG ANALYSIS SUMMARY\n"
 	printf "=========================================\n"
 	analyze_logs # uses default /var/log/messages
+
+	#professional here-document footer
+	cat << EOF
+
+--- End of Report ---
+Script: syshealth.sh (Lab 5 - Error Handling & Professional Reports)
+Generated: $CURRENT_DATE
+Exit status: ${HEALTH_STATUS:-0} ($( [ "${HEALTH_STATUS:-0}" -eq 0 ] && echo "HEALTHY" || echo "UNHEALTHY"))
+Log file: $HOME/.syshealth.log
+===============================
+EOF
+	
+	log_message "INFO" "Report generated successfully (exit code ${HEALTH_STATUS:-0})"
 }
 
 log_message(){
