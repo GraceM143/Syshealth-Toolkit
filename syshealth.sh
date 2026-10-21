@@ -104,6 +104,7 @@ run_health_checks() {
 }
 
 analyze_logs() {
+	log_message "INFO" "Analyze logs started"
 	local log_file="${1:-/var/log/messages}" #default to rocky linux 9 main log
 	local errors=0
 	local warnings=0
@@ -186,13 +187,16 @@ log_message(){
 
 main() {
         parse_arguments "$@"
-        #Run all health checks (prints colored alerts to terminal)
+	log_message "INFO" "syshealth.sh started (Lab 5)"
+	#Run all health checks (prints colored alerts to terminal)
         run_health_checks
+	generate_report
 
         #Generate the structure report (to screen or file)
         if [ -n "$OUTPUT_FILE" ]; then
                 generate_report > "$OUTPUT_FILE"
                 echo "Report written to $OUTPUT_FILE"
+		log_message "INFO" "Report written to $OUTPUT_FILE"
        	else
                 generate_report
         fi
