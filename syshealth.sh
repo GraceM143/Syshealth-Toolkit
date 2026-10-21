@@ -171,6 +171,19 @@ generate_report(){
 	analyze_logs # uses default /var/log/messages
 }
 
+log_message(){
+	local level="$1"
+	local message="$2"
+	local log_file="$HOME/.syshealth.log"
+	local timestamp
+	timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+
+	#ensure log directory exists
+	mkdir -p "$(dirname "$log_file")"
+
+	echo "$timestamp [$level] $message" >> "$log_file"
+}
+
 main() {
         parse_arguments "$@"
         #Run all health checks (prints colored alerts to terminal)
