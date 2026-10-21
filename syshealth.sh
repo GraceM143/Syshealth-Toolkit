@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # ===============================================
 # syshealth.sh - System Health & Log Analysis Toolkit
-# Lab 3 - Refactoring into Functions
+# Lab 5
 # Author: Grace McGinn
-# Date: $(09/08/2026 +%Y-%m-%d)
+# Date: $(10/20/2026 +%Y-%m-%d)
 # ==============================================
+set -euo pipefall
+
+# Trap for logging on error or unespected event
+trap 'log_message "ERROR" "Script exited unexpectedly with code $?"' ERR
+trap 'log_message "INFO" "Script finished normally with code $?"' EXIT
+
 # --- Thresholds (change these values to test alert behavior --- 
 CPU_THRESHOLD=75
 MEM_THRESHOLD=85
