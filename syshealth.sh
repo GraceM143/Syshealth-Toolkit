@@ -141,7 +141,41 @@ analyze_logs() {
 }
 
 parse_arguments() {
-	OUTPUT_FILE="${1:-}" #if $1 is given, use it as output file; otherwise empty
+	local opt
+
+	#reset OPTIND in case the function is called multople times
+	OPTIND=1
+
+	while getopts ":m a r h v -:" opt; do
+		case "$opt" in
+			m) MODE="monitor" ;;
+			a) MODE="analyze" ;;
+			r) MODE="report" ;;
+			h) usage ;;
+			v) version ;;
+			-) # Long options
+			   case "${OPTARG}" in
+				   monitor) MODE="monitor" ;;
+				   analyze) MODE="analyze" ;;
+			   	report) MODE="report" ;;
+				   help) usage ;;
+				   version) version ;;
+				   *) echo "Unknown long option: --${OPTARG}" >&2; usage ;;
+		   	esac
+		   	;;
+			\?) echo "Invalid option: -$OPTARG" >&2; usage ;;
+			:) echo "Option -$OPTARG requires an argument." >&2; usage ::
+		esac
+	done
+
+	# handle any remaining positional argument (backward compatibility for output file
+	shift $((OPTIND - 1))
+	if [ -n "$1" ] && [ -z "$OUTPUT_FILE" ]; then
+		OUTPUT_FILE="$1"
+	fi
+
+	#default mode if none is specified
+	MODE="${MODE:-report}"
 }
 
 generate_report(){
