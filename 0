@@ -1,0 +1,13 @@
+Mode 		: report
+=========================================
+Hostname: localhost.localdomain
+Uptime: up 50 minutes
+Disk /: /dev/mapper/rl-root   36G  6.6G   29G  19% /
+Memory used: 1.1Gi/7.5Gi
+Total processes: 314
+Health status: HEALTHY
+=========================================
+
+=========+===============================
+LOG ANALYSIS SUMMARY
+=========================================

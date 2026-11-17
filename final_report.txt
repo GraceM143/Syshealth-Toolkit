@@ -1,0 +1,32 @@
+Mode 		: report
+=========================================
+Hostname: localhost.localdomain
+Uptime: up 1 hour, 11 minutes
+Disk /: /dev/mapper/rl-root   36G  6.6G   29G  19% /
+Memory used: 1.1Gi/7.5Gi
+Total processes: 315
+Health status: HEALTHY
+=========================================
+
+=========+===============================
+LOG ANALYSIS SUMMARY
+=========================================
+
+Top 5 recurring issues:
+     10 libEGL warning: egl: failed to create dri2 screen
+      3 warning: Unsupported version of key: V6
+      3 > Warning:          Unsupported maximum keycode 708, clipping.
+      3 Failed to StopUnit service: GDBus.Error:org.freedesktop.DBus.Error.Spawn.ChildExited: Process org.freedesktop.systemd1 exited with status 1
+      3 Errors from xkbcomp are not fatal to the X server
+
+Log Analysis Summary (messages):
+  Errors        : 30
+  Warnings      : 37
+  Failed logins : 0
+
+--- End of Report ---
+Script: syshealth.sh (Lab 5 - Error Handling & Professional Reports)
+Generated: 2026-11-16 22:05:35
+Exit status: 0 (HEALTHY)
+Log file: /root/.syshealth.log
+===============================

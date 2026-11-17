@@ -5,7 +5,7 @@
 # Author: Grace McGinn
 # Date: $(10/20/2026 +%Y-%m-%d)
 # ==============================================
-# set -euo pipefail
+set -euo pipefail
 
 # Trap for logging on error or unespected event
 trap 'log_message "ERROR" "Script exited unexpectedly with code $?"' ERR
@@ -32,7 +32,7 @@ check_disk_usage() {
 	local pct threshold
 	threshold="$DISK_THRESHOLD"
 
-	if [ ! mountpoint -q "$mount" 2>/dev/null ] && [ "$mount" != "/" ]; then
+	if  ! mountpoint -q "$mount" 2>/dev/null  && [ "$mount" != "/" ]; then
 		print_status "OK" "Mount point $mount does not exist on this system"
 		return 0
 	fi
@@ -79,7 +79,7 @@ check_cpu_usage() {
 run_health_checks() {
 	local overall_status=0
 
-	print_status "CHECK" "Running system health analysis..."
+	print_status "ALERT" "Running system health analysis..."
 
 	#Disk checks via loop (replaces the inline for-loop from Lab 2)
 	for mount in / /home /var; do
@@ -104,7 +104,7 @@ run_health_checks() {
 }
 
 analyze_logs() {
-	log_message "INFO" "Analyze logs started"
+	log_message "OK" "Analyze logs started"
 	local log_file="${1:-/var/log/messages}" #default to rocky linux 9 main log
 	local errors=0
 	local warnings=0
@@ -120,9 +120,9 @@ analyze_logs() {
 	fi
 
 	#count issues using extended regex (case-insensitive where useful)
-	errors=$(grep -E -i 'ERROR|Error|error' "$log_file" 2>/dev/null | wc -l)
-	warnings=$(grep -E -i 'WARNING|Warning|warning' "$log_file" 2>/dev/null | wc -l)
-	failed_logins=$(grep -E -i 'Failed password|authentication failure|Failed login' "$log_file" 2>/dev/null | wc -l)
+	errors=$( (grep -E -i 'ERROR|Error|error' "$log_file" 2>/dev/null || true) | wc -l)
+	warnings=$( (grep -E -i 'WARNING|Warning|warning' "$log_file" 2>/dev/null || true) | wc -l)
+	failed_logins=$( (grep -E -i 'Failed password|authentication failure|Failed login' "$log_file" 2>/dev/null || true) | wc -l)
 
 	#Top 5 most common errors/warning messages (cleaned with sed)
         printf "\nTop 5 recurring issues:\n"
@@ -131,7 +131,7 @@ analyze_logs() {
                 | sort \
 		| uniq -c \
                 | sort -nr \
-                | head -5 \
+                | head -5 || true
 
         #summary section
         printf "\nLog Analysis Summary (%s):\n" "$(basename "$log_file")"
@@ -151,7 +151,7 @@ parse_arguments() {
 			m) MODE="monitor" ;;
 			a) MODE="analyze" ;;
 			r) MODE="report" ;;
-			h) usage ;;
+			h) usage; exit 0 ;;
 			v) version ;;
 			-) # Long options
 			   case "${OPTARG}" in
@@ -170,8 +170,8 @@ parse_arguments() {
 
 	# handle any remaining positional argument (backward compatibility for output file)
 	shift $((OPTIND - 1))
-	if [ -n "$1" ] && [ -z "$OUTPUT_FILE" ]; then
-		OUTPUT_FILE="{$1:-}"
+	if [ -n "${1:-}" ] && [ -z "${OUTPUT_FILE:-}" ]; then
+		OUTPUT_FILE="${1:-}"
 	fi
 
 	#default mode if none is specified
@@ -195,9 +195,9 @@ run_mode() {
 		report)
 			log_message "INFO" "Running in REPORT mode (full)"
 			run_health_checks
-			if [ -n "$OUTPUT_FILE" ]; then
-				generate_report > "$OUTPUT_FILE"
-				echo "Full report written to $OUTPUT_FILE"
+			if [ -n "${OUTPUT_FILE:-}" ]; then
+				generate_report > "${OUTPUT_FILE:-0}"
+				echo "Full report written to ${OUTPUT_FILE:-0}"
 			else
 				generate_report
 			fi
@@ -210,6 +210,7 @@ run_mode() {
 }
 
 generate_report(){
+	# echo "DEBUG: entering generate report"
 	#Re-collect the human-readable metrics (same as lab 1)
 	local CURRENT_DATE HOSTNAME UPTIME DISK_USAGE MEMORY_USAGE PROCESS_COUNT
 	
@@ -245,7 +246,8 @@ generate_report(){
 	printf "LOG ANALYSIS SUMMARY\n"
 	printf "=========================================\n"
 	analyze_logs # uses default /var/log/messages
-
+	# echo "DEBUG: analyze_logs complete"
+	
 	#professional here-document footer
 	cat << EOF
 
@@ -256,6 +258,7 @@ Exit status: ${HEALTH_STATUS:-0} ($( [ "${HEALTH_STATUS:-0}" -eq 0 ] && echo "HE
 Log file: $HOME/.syshealth.log
 ===============================
 EOF
+	# echo "DEBUG: footer complete"
 	
 	log_message "INFO" "Report generated successfully (exit code ${HEALTH_STATUS:-0})"
 }
@@ -296,7 +299,7 @@ Examples:
 
 Report bugs to your instructor.
 EOF
-	exit 1
+	exit 0
 }
 
 version() {
@@ -320,4 +323,4 @@ main() {
 
 
 # --- the single call that starts everything - must be the last line
-main
+main $@
