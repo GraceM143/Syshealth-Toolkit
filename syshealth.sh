@@ -5,7 +5,7 @@
 # Author: Grace McGinn
 # Date: $(10/20/2026 +%Y-%m-%d)
 # ==============================================
-set -euo pipefail
+# set -euo pipefail
 
 # Trap for logging on error or unespected event
 trap 'log_message "ERROR" "Script exited unexpectedly with code $?"' ERR
@@ -23,7 +23,7 @@ print_status() {
        	if [ "$status" = "OK" ]; then
                 echo -e "\e[32m OK: $message\e[0m"
        	else
-               echo -e "\e[31m ALERT: $message\e[0m"
+              	echo -e "\e[31m ALERT: $message\e[0m"
        	fi
 }
 
@@ -146,7 +146,7 @@ parse_arguments() {
 	#reset OPTIND in case the function is called multople times
 	OPTIND=1
 
-	while getopts ":m a r h v -:" opt; do
+	while getopts "marhv-:" opt; do
 		case "$opt" in
 			m) MODE="monitor" ;;
 			a) MODE="analyze" ;;
@@ -157,24 +157,22 @@ parse_arguments() {
 			   case "${OPTARG}" in
 				   monitor) MODE="monitor" ;;
 				   analyze) MODE="analyze" ;;
-			   	report) MODE="report" ;;
+			       	report) MODE="report" ;;
 				   help) usage ;;
 				   version) version ;;
 				   *) echo "Unknown long option: --${OPTARG}" >&2; usage ;;
 		   	esac
 		   	;;
-			\?) echo "Invalid option: -$OPTARG" >&2; usage ;;
-			:) echo "Option -$OPTARG requires an argument." >&2; usage ::
+			\?) echo "Invalid option: -$opt" >&2; usage ;;
+			:) echo "Option -$opt requires an argument." >&2; usage ;;
 		esac
 	done
 
-	# handle any remaining positional argument (backward compatibility for output file
+	# handle any remaining positional argument (backward compatibility for output file)
 	shift $((OPTIND - 1))
-	set +u
-	if [ -n "{$1}" ] && [ -z "$OUTPUT_FILE" ]; then
-		OUTPUT_FILE="$1"
+	if [ -n "$1" ] && [ -z "$OUTPUT_FILE" ]; then
+		OUTPUT_FILE="{$1:-}"
 	fi
-	set -u
 
 	#default mode if none is specified
 	MODE="${MODE:-report}"
@@ -298,7 +296,7 @@ Examples:
 
 Report bugs to your instructor.
 EOF
-	exit 0
+	exit 1
 }
 
 version() {
