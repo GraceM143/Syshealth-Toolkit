@@ -81,7 +81,7 @@ run_health_checks() {
 
 	print_status "CHECK" "Running system health analysis..."
 
-	# DIsk checks via loop (replaces the inline for-loop from Lab 2)
+	#Disk checks via loop (replaces the inline for-loop from Lab 2)
 	for mount in / /home /var; do
 		if ! check_disk_usage "$mount"; then
 			overall_status=1
@@ -170,9 +170,11 @@ parse_arguments() {
 
 	# handle any remaining positional argument (backward compatibility for output file
 	shift $((OPTIND - 1))
-	if [ -n "$1" ] && [ -z "$OUTPUT_FILE" ]; then
+	set +u
+	if [ -n "{$1}" ] && [ -z "$OUTPUT_FILE" ]; then
 		OUTPUT_FILE="$1"
 	fi
+	set -u
 
 	#default mode if none is specified
 	MODE="${MODE:-report}"
@@ -195,7 +197,7 @@ run_mode() {
 		report)
 			log_message "INFO" "Running in REPORT mode (full)"
 			run_health_checks
-			if [ -n "$OUTPUT_FILE" ] then
+			if [ -n "$OUTPUT_FILE" ]; then
 				generate_report > "$OUTPUT_FILE"
 				echo "Full report written to $OUTPUT_FILE"
 			else
@@ -231,6 +233,7 @@ generate_report(){
 		"Health status: $([ "${HEALTH_STATUS:-0}" -eq 0 ] && echo "HEALTHY" || echo "UNHEALTHY")"
 	)
 
+	printf "Mode 		: %s\n" "${MODE:-report}"
 	printf "=========================================\n"
 	
 	for metric in "${report_metrics[@]}"; do
@@ -307,23 +310,16 @@ version() {
 
 main() {
         parse_arguments "$@"
-	log_message "INFO" "syshealth.sh started (Lab 5)"
-	#Run all health checks (prints colored alerts to terminal)
-        run_health_checks
-	generate_report
+	log_message "INFO" "syshealth.sh started in mode $MODE"
+	
+	run_mode
 
-        #Generate the structure report (to screen or file)
-        if [ -n "$OUTPUT_FILE" ]; then
-                generate_report > "$OUTPUT_FILE"
-                echo "Report written to $OUTPUT_FILE"
-		log_message "INFO" "Report written to $OUTPUT_FILE"
-       	else
-                generate_report
-        fi
-
-        #Exit with the aggregated health status from run_health_status
-        exit "${HEALTH_STATUS:-0}"
+	#for monitor/analyze modes that don't already exist inside generate_report
+	if [ "$MODE" != "report" ]; then
+		exit "${HEALTH_STATUS:-0}"
+	fi
 }
+
 
 # --- the single call that starts everything - must be the last line
 main
